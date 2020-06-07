@@ -19,6 +19,7 @@ import (
 var (
 	force = flag.Bool("force", false, "Whether to force re-download of all addons")
 	add = flag.Int("add", -1, "Project ID of an addon to download")
+	delete = flag.Int("delete", -1, "Project ID of an addon to delete")
 )
 
 func main() {
@@ -50,6 +51,26 @@ func main() {
 			log.Printf("Unable to install addon #%d: %v", *add, err)
 		}
 		conf.Addons = append(conf.Addons, addon)
+	} else if *delete > 0 {
+		var newAddons []*Addon
+		for i := range conf.Addons {
+			addon := conf.Addons[i]
+			if addon.Id == *delete {
+				if err := remove(conf.InstallPath, addon); err != nil {
+					log.Printf("Failed to delete addon: %v", err)
+					return
+				}
+				log.Printf("Removed addon '%s'", addon.Name)
+			} else {
+				newAddons = append(newAddons, addon)
+			}
+		}
+
+		if len(newAddons) == len(conf.Addons) {
+			log.Printf("Addon not found: %d", *delete)
+		} else {
+			conf.Addons = newAddons
+		}
 	} else {
 		for i := range conf.Addons {
 			if err := check(conf.InstallPath, conf.Addons[i]); err != nil {
@@ -91,10 +112,8 @@ func check(path string, addon *Addon) error {
 	}
 
 	// Remove all the existing directories associated with the addon
-	for i := range addon.Directories {
-		if err := os.RemoveAll(filepath.Join(path, addon.Directories[i])); err != nil {
-			return err
-		}
+	if err := remove(path, addon); err != nil {
+		return err
 	}
 
 	// Deploy the new version
@@ -106,6 +125,15 @@ func check(path string, addon *Addon) error {
 	// Update our metadata
 	addon.FileId = latest.FileId
 	addon.Directories = dirs
+	return nil
+}
+
+func remove(path string, addon *Addon) error {
+	for i := range addon.Directories {
+		if err := os.RemoveAll(filepath.Join(path, addon.Directories[i])); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
