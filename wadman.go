@@ -63,28 +63,44 @@ func check(path string, addon *Addon) error {
 		return fmt.Errorf("no releases found for addon %d (%s)", addon.Id, addon.Name)
 	}
 
-	if latest.FileId != addon.FileId || *force {
-		// Remove all the existing directories associated with the addon
-		for i := range addon.Directories {
-			if err := os.RemoveAll(filepath.Join(path, addon.Directories[i])); err != nil {
-				return err
-			}
-		}
-
-		// Deploy the new version
-		dirs, err := install(latest.Url, path)
-		if err != nil {
-			return err
-		}
-
-		// Update our metadata
-		addon.FileId = latest.FileId
-		addon.Directories = dirs
-		log.Printf("'%s' updated to version %s\n", addon.Name, latest.DisplayName)
+	if *force {
+		log.Printf("'%s': force updating to version %s", addon.Name, latest.DisplayName)
+	} else if latest.FileId != addon.FileId {
+		log.Printf("'%s': updating to version %s", addon.Name, latest.DisplayName)
+	} else if dirsMissing(path, addon.Directories) {
+		log.Printf("'%s': missing directories, reinstalling version %s", addon.Name, latest.DisplayName)
+	} else {
 		return nil
 	}
 
+	// Remove all the existing directories associated with the addon
+	for i := range addon.Directories {
+		if err := os.RemoveAll(filepath.Join(path, addon.Directories[i])); err != nil {
+			return err
+		}
+	}
+
+	// Deploy the new version
+	dirs, err := install(latest.Url, path)
+	if err != nil {
+		return err
+	}
+
+	// Update our metadata
+	addon.FileId = latest.FileId
+	addon.Directories = dirs
 	return nil
+}
+
+func dirsMissing(path string, directories []string) bool {
+	for i := range directories {
+		target := filepath.Join(path, directories[i])
+		info, err := os.Stat(target)
+		if err != nil || !info.IsDir() {
+			return true
+		}
+	}
+	return false
 }
 
 func latestFile(details *AddonResponse) *AddonFile {
