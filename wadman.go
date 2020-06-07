@@ -128,7 +128,7 @@ func install(url, path string) ([]string, error) {
 
 	for i := range reader.File {
 		err := func(f *zip.File) error {
-			parts := strings.Split(f.Name, string(filepath.Separator))
+			parts := strings.Split(f.Name, "/")
 			dirs[parts[0]] = true
 
 			target := filepath.Join(path, f.Name)
