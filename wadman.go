@@ -18,6 +18,7 @@ import (
 
 var (
 	force = flag.Bool("force", false, "Whether to force re-download of all addons")
+	add = flag.Int("add", -1, "Project ID of an addon to download")
 )
 
 func main() {
@@ -43,16 +44,24 @@ func main() {
 		}
 	}()
 
-	for i := range conf.Addons {
-		if err := check(conf.InstallPath, conf.Addons[i]); err != nil {
-			log.Printf("Unable to update addon #%d: %v\n", i, err)
+	if *add > 0 {
+		addon := &Addon{Id: *add}
+		if err := check(conf.InstallPath, addon); err != nil {
+			log.Printf("Unable to install addon #%d: %v", *add, err)
 		}
-	}
-
-	if len(conf.Addons) == 0 {
-		log.Printf("No addons configured. Add addons to the config file: %s", path)
+		conf.Addons = append(conf.Addons, addon)
 	} else {
-		log.Printf("Finished checking %d addons", len(conf.Addons))
+		for i := range conf.Addons {
+			if err := check(conf.InstallPath, conf.Addons[i]); err != nil {
+				log.Printf("Unable to update addon #%d: %v", i, err)
+			}
+		}
+
+		if len(conf.Addons) == 0 {
+			log.Printf("No addons configured. Add addons to the config file: %s", path)
+		} else {
+			log.Printf("Finished checking %d addons", len(conf.Addons))
+		}
 	}
 }
 
@@ -71,6 +80,8 @@ func check(path string, addon *Addon) error {
 
 	if *force {
 		log.Printf("'%s': force updating to version %s", addon.Name, latest.DisplayName)
+	} else if addon.FileId == 0 {
+		log.Printf("'%s': installing version %s", addon.Name, latest.DisplayName)
 	} else if latest.FileId != addon.FileId {
 		log.Printf("'%s': updating to version %s", addon.Name, latest.DisplayName)
 	} else if dirsMissing(path, addon.Directories) {
