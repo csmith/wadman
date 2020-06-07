@@ -48,6 +48,12 @@ func main() {
 			log.Printf("Unable to update addon #%d: %v\n", i, err)
 		}
 	}
+
+	if len(conf.Addons) == 0 {
+		log.Printf("No addons configured. Add addons to the config file: %s", path)
+	} else {
+		log.Printf("Finished checking %d addons", len(conf.Addons))
+	}
 }
 
 func check(path string, addon *Addon) error {
