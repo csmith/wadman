@@ -20,6 +20,7 @@ var (
 	force = flag.Bool("force", false, "Whether to force re-download of all addons")
 	add = flag.Int("add", -1, "Project ID of an addon to download")
 	delete = flag.Int("delete", -1, "Project ID of an addon to delete")
+	list = flag.Bool("list", false, "List the available addons")
 )
 
 func main() {
@@ -70,6 +71,11 @@ func main() {
 			log.Printf("Addon not found: %d", *delete)
 		} else {
 			conf.Addons = newAddons
+		}
+	} else if *list {
+		log.Printf("Listing:")
+		for i := range conf.Addons {
+			log.Printf("\t[%6d] %s", conf.Addons[i].Id, conf.Addons[i].Name)
 		}
 	} else {
 		for i := range conf.Addons {
