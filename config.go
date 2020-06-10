@@ -15,6 +15,7 @@ type Addon struct {
 
 type Config struct {
 	InstallPath string   `json:"install_path"`
+	Version     int      `json:"version"`
 	Addons      []*Addon `json:"addons"`
 }
 
@@ -40,7 +41,16 @@ func LoadConfig(path string) (*Config, error) {
 
 	config := &Config{}
 	err = json.NewDecoder(f).Decode(config)
-	return config, err
+	if err != nil {
+		return nil, err
+	}
+
+	if config.Version < 2 {
+		config.InstallPath = filepath.Dir(filepath.Dir(config.InstallPath))
+		config.Version = 2
+	}
+
+	return config, nil
 }
 
 func SaveConfig(path string, config *Config) error {

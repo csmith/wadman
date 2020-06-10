@@ -1,16 +1,9 @@
 package main
 
 import (
-	"archive/zip"
-	"bytes"
 	"flag"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
-	"net/http"
-	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -21,6 +14,8 @@ var (
 	add = flag.Int("add", -1, "Project ID of an addon to download")
 	delete = flag.Int("delete", -1, "Project ID of an addon to delete")
 	list = flag.Bool("list", false, "List the available addons")
+
+	wow *WowInstall
 )
 
 func main() {
@@ -36,6 +31,8 @@ func main() {
 		log.Panicf("Unable to load config from %s: %v", path, err)
 	}
 
+	wow = NewWowInstall(conf.InstallPath)
+
 	defer func() {
 		sort.Slice(conf.Addons, func(i, j int) bool {
 			return strings.Compare(conf.Addons[i].Name, conf.Addons[j].Name) < 0
@@ -48,7 +45,7 @@ func main() {
 
 	if *add > 0 {
 		addon := &Addon{Id: *add}
-		if err := check(conf.InstallPath, addon); err != nil {
+		if err := check(addon); err != nil {
 			log.Printf("Unable to install addon #%d: %v", *add, err)
 		}
 		conf.Addons = append(conf.Addons, addon)
@@ -57,7 +54,7 @@ func main() {
 		for i := range conf.Addons {
 			addon := conf.Addons[i]
 			if addon.Id == *delete {
-				if err := remove(conf.InstallPath, addon); err != nil {
+				if err := wow.RemoveAddons(addon.Directories); err != nil {
 					log.Printf("Failed to delete addon: %v", err)
 					return
 				}
@@ -79,7 +76,7 @@ func main() {
 		}
 	} else {
 		for i := range conf.Addons {
-			if err := check(conf.InstallPath, conf.Addons[i]); err != nil {
+			if err := check(conf.Addons[i]); err != nil {
 				log.Printf("Unable to update addon #%d: %v", i, err)
 			}
 		}
@@ -92,7 +89,7 @@ func main() {
 	}
 }
 
-func check(path string, addon *Addon) error {
+func check(addon *Addon) error {
 	details, err := GetAddon(addon.Id)
 	if err != nil {
 		return err
@@ -111,19 +108,19 @@ func check(path string, addon *Addon) error {
 		log.Printf("'%s': installing version %s", addon.Name, latest.DisplayName)
 	} else if latest.FileId != addon.FileId {
 		log.Printf("'%s': updating to version %s", addon.Name, latest.DisplayName)
-	} else if dirsMissing(path, addon.Directories) {
+	} else if !wow.HasAddons(addon.Directories) {
 		log.Printf("'%s': missing directories, reinstalling version %s", addon.Name, latest.DisplayName)
 	} else {
 		return nil
 	}
 
 	// Remove all the existing directories associated with the addon
-	if err := remove(path, addon); err != nil {
+	if err := wow.RemoveAddons(addon.Directories); err != nil {
 		return err
 	}
 
 	// Deploy the new version
-	dirs, err := install(latest.Url, path)
+	dirs, err := wow.InstallAddon(latest.Url)
 	if err != nil {
 		return err
 	}
@@ -132,26 +129,6 @@ func check(path string, addon *Addon) error {
 	addon.FileId = latest.FileId
 	addon.Directories = dirs
 	return nil
-}
-
-func remove(path string, addon *Addon) error {
-	for i := range addon.Directories {
-		if err := os.RemoveAll(filepath.Join(path, addon.Directories[i])); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func dirsMissing(path string, directories []string) bool {
-	for i := range directories {
-		target := filepath.Join(path, directories[i])
-		info, err := os.Stat(target)
-		if err != nil || !info.IsDir() {
-			return true
-		}
-	}
-	return false
 }
 
 func latestFile(details *AddonResponse) *AddonFile {
@@ -171,65 +148,4 @@ func latestFile(details *AddonResponse) *AddonFile {
 	}
 
 	return latestFile
-}
-
-func install(url, path string) ([]string, error) {
-	res, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-
-	defer res.Body.Close()
-
-	b, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	reader, err := zip.NewReader(bytes.NewReader(b), res.ContentLength)
-	if err != nil {
-		return nil, err
-	}
-
-	dirs := make(map[string]bool)
-
-	for i := range reader.File {
-		err := func(f *zip.File) error {
-			parts := strings.Split(f.Name, "/")
-			dirs[parts[0]] = true
-
-			target := filepath.Join(path, f.Name)
-			if f.FileInfo().IsDir() {
-				return os.MkdirAll(target, os.FileMode(0755))
-			} else {
-				in, err := f.Open()
-				if err != nil {
-					return err
-				}
-				defer in.Close()
-
-				_ = os.MkdirAll(filepath.Dir(target), os.FileMode(0755))
-				out, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-				if err != nil {
-					return err
-				}
-				defer out.Close()
-
-				if _, err := io.Copy(out, in); err != nil {
-					return err
-				}
-
-				return nil
-			}
-		}(reader.File[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	var dirSlice []string
-	for d := range dirs {
-		dirSlice = append(dirSlice, d)
-	}
-	return dirSlice, nil
 }
