@@ -76,7 +76,7 @@ func main() {
 			disabled = make(map[string]bool)
 		}
 
-		log.Printf("Listing:")
+		fmt.Printf("%d addons installed:\n\n", len(conf.Addons))
 		for i := range conf.Addons {
 			addon := conf.Addons[i]
 			count := 0
@@ -93,7 +93,7 @@ func main() {
 				status = " (PARTIALLY DISABLED)"
 			}
 
-			log.Printf("\t[%6d] %s%s", addon.Id, addon.Name, status)
+			fmt.Printf("[%6d] %s%s\n", addon.Id, addon.Name, status)
 		}
 	} else {
 		for i := range conf.Addons {
