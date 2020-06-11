@@ -70,9 +70,30 @@ func main() {
 			conf.Addons = newAddons
 		}
 	} else if *list {
+		disabled, err := wow.DisabledAddons()
+		if err != nil {
+			log.Printf("Unable to list disabled addons: %v", err)
+			disabled = make(map[string]bool)
+		}
+
 		log.Printf("Listing:")
 		for i := range conf.Addons {
-			log.Printf("\t[%6d] %s", conf.Addons[i].Id, conf.Addons[i].Name)
+			addon := conf.Addons[i]
+			count := 0
+			for d := range addon.Directories {
+				if disabled[addon.Directories[d]] {
+					count++
+				}
+			}
+
+			var status string
+			if count == len(addon.Directories) {
+				status = " (DISABLED)"
+			} else if count > 0 {
+				status = " (PARTIALLY DISABLED)"
+			}
+
+			log.Printf("\t[%6d] %s%s", addon.Id, addon.Name, status)
 		}
 	} else {
 		for i := range conf.Addons {

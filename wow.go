@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"bufio"
 	"bytes"
 	"io"
 	"io/ioutil"
@@ -121,4 +122,41 @@ func (w *WowInstall) HasAddons(names []string) bool {
 		}
 	}
 	return true
+}
+
+// DisabledAddons returns a map of addons that are disabled in the WoW client.
+func (w *WowInstall) DisabledAddons() (map[string]bool, error) {
+	matches, err := filepath.Glob(filepath.Join(w.path, "WTF", "Account", "*", "*", "*", "AddOns.txt"))
+	if err != nil {
+		return nil, err
+	}
+
+	disabled := make(map[string]bool)
+	for i := range matches {
+		err := func(path string) error {
+			file, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+
+			defer file.Close()
+
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				line := strings.TrimSpace(scanner.Text())
+				if strings.HasSuffix(line, ": disabled") {
+					name := strings.TrimSuffix(line, ": disabled")
+					disabled[name] = true
+				}
+			}
+
+			return nil
+		}(matches[i])
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return disabled, nil
 }
