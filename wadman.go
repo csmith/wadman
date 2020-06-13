@@ -14,6 +14,7 @@ var (
 	add = flag.Int("add", -1, "Project ID of an addon to download")
 	delete = flag.Int("delete", -1, "Project ID of an addon to delete")
 	list = flag.Bool("list", false, "List the available addons")
+	search = flag.String("search", "", "Searches for addons")
 
 	wow *WowInstall
 )
@@ -94,6 +95,16 @@ func main() {
 			}
 
 			fmt.Printf("[%6d] %s%s\n", addon.Id, addon.Name, status)
+		}
+	} else if len(*search) > 0 {
+		results, err := SearchAddons(*search)
+		if err != nil {
+			log.Printf("Unable to search addons: %v", err)
+			return
+		}
+
+		for i := range results {
+			fmt.Printf("[%6d] %s\n", results[i].Id, results[i].Name)
 		}
 	} else {
 		for i := range conf.Addons {

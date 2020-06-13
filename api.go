@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -42,4 +43,17 @@ func GetAddon(id int) (*AddonResponse, error) {
 	addon := &AddonResponse{}
 	err = json.NewDecoder(res.Body).Decode(addon)
 	return addon, err
+}
+
+func SearchAddons(query string) ([]*AddonResponse, error) {
+	res, err := http.Get(fmt.Sprintf("https://addons-ecs.forgesvc.net/api/v2/addon/search?gameId=1&searchFilter=%s", url.QueryEscape(query)))
+	if err != nil {
+		return nil, err
+	}
+
+	defer res.Body.Close()
+
+	var addons []*AddonResponse
+	err = json.NewDecoder(res.Body).Decode(&addons)
+	return addons, err
 }
