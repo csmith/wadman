@@ -1,0 +1,30 @@
+package cmd
+
+import (
+	"fmt"
+	"github.com/csmith/wadman/internal"
+	"github.com/spf13/cobra"
+	"strconv"
+)
+
+func init() {
+	rootCommand.AddCommand(addCommand)
+}
+
+var addCommand = &cobra.Command{
+	Use:   "add <id [id [id [...]]]>",
+	Short: "Download and install new addons",
+	Args:  addonIdArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		defer saveConfig()
+
+		for i := range args {
+			target, _ := strconv.Atoi(args[i])
+			addon := &internal.Addon{Id: target}
+			if err := install.CheckUpdates(addon, false); err != nil {
+				fmt.Printf("Unable to install addon #%d: %v\n", target, err)
+			}
+			config.Addons = append(config.Addons, addon)
+		}
+	},
+}

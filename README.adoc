@@ -1,0 +1,76 @@
+= Wadman: World of Warcraft addon manager
+
+*Wadman* is a simple command-line tool to manage World of Warcraft addons that are
+obtained from https://www.curseforge.com/wow/addons[CurseForge]. Addons can be
+installed using their CurseForge project IDs, and will then be automatically
+kept up to date whenever the `update` command is run.
+
+== Initial configuration
+
+(This will be changing in a future version)
+
+To get started, run `wadman update` and a message will be displayed showing
+the location of wadman's configuration file. At the start of the config file
+will be an `"install_path"` key that you need to change to the path of your
+World of Warcraft folder, such as `C:\Program Files (x86)\World of Warcraft\\_retail_`.
+NB: As this is a JSON key you would need to escape back slashes so the config will
+look like this:
+
+[source,json]
+----
+{
+  "install_path": "C:\\Program Files (x86)\\World of Warcraft\\_retail_",
+  // ...
+}
+----
+
+== Finding project IDs
+
+=== From CurseForge
+
+The CurseForge website shows project IDs in the sidebar for each project.
+For example looking at https://www.curseforge.com/wow/addons/deadly-boss-mods[Deadly Boss Mods]
+the sidebar shows the project ID is `3358`:
+
+image::docs/projectid.png[CurseForge screenshot showing project ID]
+
+=== Using Wadman
+
+Wadman has a built-in search feature that shows you the name and IDs of matching
+addons:
+
+[source]
+----
+$ wadman search "deadly boss mods"
+[  3358] Deadly Boss Mods (DBM)
+[ 61621] Deadly Boss Mods (DBM) - Challenges (Visions/Torghast)
+[ 61882] Deadly Boss Mods (DBM) - PvP Mods
+[ 16442] Deadly Boss Mods (DBM) - BC & Vanilla mods (Retail)
+[ 43971] Deadly Boss Mods (DBM) - Cataclysm mods
+----
+
+== Managing addons
+
+Addons are added and removed by passing their project IDs to the `add` and `remove`
+commands:
+
+[source]
+----
+# Install DBM and the Cataclysm mods
+$ wadman add 3358 43971
+
+# Remove just the Catalycsm mod
+$ wadman remove 43971
+----
+
+Updating addons is performed using the `update` command. You can optionally pass the
+`--force` flag to force all addons to be removed and replaced with their latest versions:
+
+[source]
+----
+# Update any addons with new releases
+$ wadman update
+
+# Remove and reinstall all addons
+$ wadman update --force
+----

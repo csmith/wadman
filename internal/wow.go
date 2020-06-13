@@ -1,9 +1,10 @@
-package main
+package internal
 
 import (
 	"archive/zip"
 	"bufio"
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -159,4 +160,49 @@ func (w *WowInstall) DisabledAddons() (map[string]bool, error) {
 	}
 
 	return disabled, nil
+}
+
+// CheckUpdates checks for and applies updates for the given addon.
+// The addon name will be updated to match the server-side name.
+// If force is true, the addon will always be redeployed even if it appears to be up-to-date.
+func (w *WowInstall) CheckUpdates(addon *Addon, force bool) error {
+	details, err := GetAddon(addon.Id)
+	if err != nil {
+		return err
+	}
+
+	addon.Name = details.Name
+
+	latest := LatestFile(details)
+	if latest == nil {
+		return fmt.Errorf("no releases found for addon %d (%s)", addon.Id, addon.Name)
+	}
+
+	if force {
+		fmt.Printf("'%s': force updating to version %s\n", addon.Name, latest.DisplayName)
+	} else if addon.FileId == 0 {
+		fmt.Printf("'%s': installing version %s\n", addon.Name, latest.DisplayName)
+	} else if latest.FileId != addon.FileId {
+		fmt.Printf("'%s': updating to version %s\n", addon.Name, latest.DisplayName)
+	} else if !w.HasAddons(addon.Directories) {
+		fmt.Printf("'%s': missing directories, reinstalling version %s\n", addon.Name, latest.DisplayName)
+	} else {
+		return nil
+	}
+
+	// Remove all the existing directories associated with the addon
+	if err := w.RemoveAddons(addon.Directories); err != nil {
+		return err
+	}
+
+	// Deploy the new version
+	dirs, err := w.InstallAddon(latest.Url)
+	if err != nil {
+		return err
+	}
+
+	// Update our metadata
+	addon.FileId = latest.FileId
+	addon.Directories = dirs
+	return nil
 }

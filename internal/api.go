@@ -1,4 +1,4 @@
-package main
+package internal
 
 import (
 	"encoding/json"
@@ -56,4 +56,23 @@ func SearchAddons(query string) ([]*AddonResponse, error) {
 	var addons []*AddonResponse
 	err = json.NewDecoder(res.Body).Decode(&addons)
 	return addons, err
+}
+
+func LatestFile(details *AddonResponse) *AddonFile {
+	var (
+		latestTime time.Time
+		latestFile *AddonFile
+	)
+
+	for i := range details.Files {
+		f := details.Files[i]
+		if f.Flavour == "wow_retail" && f.Type <= Beta && !f.Alternate {
+			if f.Date.After(latestTime) {
+				latestTime = f.Date
+				latestFile = &f
+			}
+		}
+	}
+
+	return latestFile
 }
