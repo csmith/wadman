@@ -21,7 +21,7 @@ var addCommand = &cobra.Command{
 		for i := range args {
 			target, _ := strconv.Atoi(args[i])
 			addon := &internal.Addon{Id: target}
-			if err := install.CheckUpdates(addon, false); err != nil {
+			if err := install.CheckUpdates(addon, false, false); err != nil {
 				fmt.Printf("Unable to install addon #%d: %v\n", target, err)
 			}
 			config.Addons = append(config.Addons, addon)

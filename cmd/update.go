@@ -9,9 +9,11 @@ import (
 func init() {
 	rootCommand.AddCommand(updateCommand)
 	updateCommand.Flags().BoolVarP(&force, "force", "f", false, "Replace all addons with the latest version")
+	updateCommand.Flags().BoolVarP(&verbose, "verbose", "v", false, "Show debug information when checking for updates")
 }
 
 var force bool
+var verbose bool
 
 var updateCommand = &cobra.Command{
 	Use:   "update",
@@ -21,7 +23,7 @@ var updateCommand = &cobra.Command{
 		defer saveConfig()
 
 		for i := range config.Addons {
-			if err := install.CheckUpdates(config.Addons[i], force); err != nil {
+			if err := install.CheckUpdates(config.Addons[i], force, verbose); err != nil {
 				fmt.Printf("Unable to update addon '%s': %v\n", config.Addons[i].Name, err)
 			}
 		}

@@ -165,7 +165,12 @@ func (w *WowInstall) DisabledAddons() (map[string]bool, error) {
 // CheckUpdates checks for and applies updates for the given addon.
 // The addon name will be updated to match the server-side name.
 // If force is true, the addon will always be redeployed even if it appears to be up-to-date.
-func (w *WowInstall) CheckUpdates(addon *Addon, force bool) error {
+func (w *WowInstall) CheckUpdates(addon *Addon, force, verbose bool) error {
+	if verbose {
+		fmt.Println()
+		fmt.Printf("================================================================================\n")
+		fmt.Printf("Checking for updates to addon %d (%s)\n\n", addon.Id, addon.Name)
+	}
 	details, err := GetAddon(addon.Id)
 	if err != nil {
 		return err
@@ -173,7 +178,7 @@ func (w *WowInstall) CheckUpdates(addon *Addon, force bool) error {
 
 	addon.Name = details.Name
 
-	latest := LatestFile(details)
+	latest := LatestFile(details, verbose)
 	if latest == nil {
 		return fmt.Errorf("no releases found for addon %d (%s)", addon.Id, addon.Name)
 	}
@@ -187,6 +192,16 @@ func (w *WowInstall) CheckUpdates(addon *Addon, force bool) error {
 	} else if !w.HasAddons(addon.Directories) {
 		fmt.Printf("'%s': missing directories, reinstalling version %s\n", addon.Name, latest.DisplayName)
 	} else {
+		if verbose {
+			fmt.Printf(
+				"No update found for '%s'. Installed file ID: %d, latest file ID: %d (version: %s)\n",
+				addon.Name,
+				addon.FileId,
+				latest.FileId,
+				latest.DisplayName,
+			)
+		}
+
 		return nil
 	}
 

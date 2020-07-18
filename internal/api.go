@@ -58,7 +58,7 @@ func SearchAddons(query string) ([]*AddonResponse, error) {
 	return addons, err
 }
 
-func LatestFile(details *AddonResponse) *AddonFile {
+func LatestFile(details *AddonResponse, verbose bool) *AddonFile {
 	var (
 		latestTime time.Time
 		latestFile *AddonFile
@@ -66,11 +66,27 @@ func LatestFile(details *AddonResponse) *AddonFile {
 
 	for i := range details.Files {
 		f := details.Files[i]
-		if f.Flavour == "wow_retail" && f.Type <= Beta && !f.Alternate {
-			if f.Date.After(latestTime) {
-				latestTime = f.Date
-				latestFile = &f
-			}
+
+		if verbose {
+			fmt.Printf(
+				"Found file %d (%s)\n\tFlavour: %s (valid: %t)\n\tType: %d (valid: %t)\n\tAlternative: %t (valid: %t)\n\tTime: %s (latest: %s; valid: %t)\n\n",
+				f.FileId,
+				f.DisplayName,
+				f.Flavour,
+				f.Flavour == "wow_retail",
+				f.Type,
+				f.Type <= Beta,
+				f.Alternate,
+				!f.Alternate,
+				f.Date,
+				latestTime,
+				f.Date.After(latestTime),
+			)
+		}
+
+		if f.Flavour == "wow_retail" && f.Type <= Beta && !f.Alternate && f.Date.After(latestTime) {
+			latestTime = f.Date
+			latestFile = &f
 		}
 	}
 
