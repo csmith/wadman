@@ -32,7 +32,9 @@ func LoadConfig(path string) (*Config, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return &Config{}, nil
+			return &Config{
+				Version: 2,
+			}, nil
 		}
 		return nil, err
 	}
@@ -46,6 +48,7 @@ func LoadConfig(path string) (*Config, error) {
 	}
 
 	if config.Version < 2 {
+		// Config version 2 uses the base directory for the install path, instead of the addons directory
 		config.InstallPath = filepath.Dir(filepath.Dir(config.InstallPath))
 		config.Version = 2
 	}
