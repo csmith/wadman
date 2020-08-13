@@ -13,6 +13,23 @@ import (
 	"strings"
 )
 
+func GuessWowPath() (string, bool) {
+	paths := []string{
+		"${PROGRAMW6432}\\World of Warcraft\\_retail_",
+		"${PROGRAMFILES(X86)}\\World of Warcraft\\_retail_",
+		"${HOME}/Games/world-of-warcraft/drive_c/Program Files (x86)/World of Warcraft/_retail_",
+	}
+
+	for _, p := range paths {
+		expanded := os.ExpandEnv(p)
+		if _, err := os.Stat(expanded); err == nil {
+			return expanded, true
+		}
+	}
+
+	return "", false
+}
+
 type WowInstall struct {
 	path       string
 	addonsPath string

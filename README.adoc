@@ -7,14 +7,12 @@ kept up to date whenever the `update` command is run.
 
 == Initial configuration
 
-(This will be changing in a future version)
-
-To get started, run `wadman update` and a message will be displayed showing
-the location of wadman's configuration file. At the start of the config file
-will be an `"install_path"` key that you need to change to the path of your
-World of Warcraft folder, such as `C:\Program Files (x86)\World of Warcraft\\_retail_`.
-NB: As this is a JSON key you would need to escape back slashes so the config will
-look like this:
+Wadman will attempt to autodetect your WoW install. Simply run `wadman update`
+and it will report the detected directory. If this isn't correct, or it failed
+to detect your install entirely, you can edit the JSON config file (located in
+`%APPDATA%\wadman\config.json` on Windows or `~/.config/wadman/config.json` on
+Linux). NB: As this is a JSON key you would need to escape back slashes, so
+the config will look like this:
 
 [source,json]
 ----

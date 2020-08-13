@@ -43,6 +43,15 @@ func loadConfig() {
 	if err != nil {
 		bail("Unable to load config from %s: %v", configPath, err)
 	}
+
+	if config.InstallPath == "" {
+		if path, ok := internal.GuessWowPath(); ok {
+			fmt.Printf("Detected WoW install at %s\n", path)
+			config.InstallPath = path
+		} else {
+			bail("Unable to find WoW install. Please edit the config file manually: %s", configPath)
+		}
+	}
 }
 
 func saveConfig() {
