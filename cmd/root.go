@@ -68,11 +68,21 @@ func createInstall() {
 	install = internal.NewWowInstall(config.InstallPath)
 }
 
-func addonIdArgs(_ *cobra.Command, args []string) error {
+func requiredAddonIdArgs(_ *cobra.Command, args []string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("requires at least one ID")
 	}
 
+	for i := range args {
+		if _, err := strconv.Atoi(args[i]); err != nil {
+			return fmt.Errorf("invalid ID at argument %d: %v", i + 1, err)
+		}
+	}
+
+	return nil
+}
+
+func optionalAddonIdArgs(_ *cobra.Command, args []string) error {
 	for i := range args {
 		if _, err := strconv.Atoi(args[i]); err != nil {
 			return fmt.Errorf("invalid ID at argument %d: %v", i + 1, err)

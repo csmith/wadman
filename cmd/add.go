@@ -14,7 +14,7 @@ func init() {
 var addCommand = &cobra.Command{
 	Use:   "add <id [id [id [...]]]>",
 	Short: "Download and install new addons",
-	Args:  addonIdArgs,
+	Args:  requiredAddonIdArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		defer saveConfig()
 

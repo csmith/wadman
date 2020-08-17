@@ -14,7 +14,7 @@ func init() {
 var removeCommand = &cobra.Command{
 	Use:   "remove <id [id [id [...]]]>",
 	Short: "Remove previously installed addons",
-	Args:  addonIdArgs,
+	Args:  requiredAddonIdArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		defer saveConfig()
 

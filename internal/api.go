@@ -3,8 +3,10 @@ package internal
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -24,6 +26,7 @@ type AddonFile struct {
 	Date        time.Time `json:"fileDate"`
 	Alternate   bool      `json:"isAlternate"`
 	DisplayName string    `json:"displayName"`
+	Versions    []string  `json:"gameVersion"`
 }
 
 type AddonResponse struct {
@@ -59,17 +62,18 @@ func SearchAddons(query string) ([]*AddonResponse, error) {
 }
 
 func LatestFile(details *AddonResponse, verbose bool) *AddonFile {
-	var (
-		latestTime time.Time
-		latestFile *AddonFile
-	)
+	var matches []AddonFile
 
 	for i := range details.Files {
 		f := details.Files[i]
 
 		if verbose {
 			fmt.Printf(
-				"Found file %d (%s)\n\tFlavour: %s (valid: %t)\n\tType: %d (valid: %t)\n\tAlternative: %t (valid: %t)\n\tTime: %s (latest: %s; valid: %t)\n\n",
+				"Found file %d (%s)\n"+
+					"\tFlavour: %s (valid: %t)\n"+
+					"\tType: %d (valid: %t)\n"+
+					"\tAlternative: %t (valid: %t)\n"+
+					"\n",
 				f.FileId,
 				f.DisplayName,
 				f.Flavour,
@@ -78,17 +82,52 @@ func LatestFile(details *AddonResponse, verbose bool) *AddonFile {
 				f.Type <= Beta,
 				f.Alternate,
 				!f.Alternate,
-				f.Date,
-				latestTime,
-				f.Date.After(latestTime),
 			)
 		}
 
-		if f.Flavour == "wow_retail" && f.Type <= Beta && !f.Alternate && f.Date.After(latestTime) {
-			latestTime = f.Date
-			latestFile = &f
+		if f.Flavour == "wow_retail" && f.Type <= Beta && !f.Alternate {
+			matches = append(matches, f)
 		}
 	}
 
-	return latestFile
+	if verbose {
+		fmt.Printf("Found %d potential versions:\n", len(matches))
+	}
+
+	var bestFile *AddonFile
+	bestAge := math.MaxFloat64
+	bestValid := false
+	for _, f := range matches {
+		age := time.Now().Sub(f.Date).Seconds()
+		valid := validVersion(&f)
+		if (valid == bestValid && age < bestAge) || (!bestValid && valid) {
+			bestFile = &f
+			bestAge = age
+			bestValid = valid
+			if verbose {
+				fmt.Printf("\tTime: %s; Versions: %s << Best so far\n", f.Date, strings.Join(f.Versions, ","))
+			}
+		} else if verbose {
+			fmt.Printf("\tTime: %s; Versions: %s << SKIPPED\n", f.Date, strings.Join(f.Versions, ","))
+		}
+	}
+
+	if verbose {
+		fmt.Println()
+	}
+
+	return bestFile
+}
+
+func validVersion(file *AddonFile) bool {
+	var invalid = false
+	for _, v := range file.Versions {
+		// TODO: Make this configurable or dynamic based on the client version
+		if strings.HasPrefix(v, "8.") || strings.HasPrefix(v, "7.") {
+			return true
+		} else {
+			invalid = true
+		}
+	}
+	return !invalid
 }
