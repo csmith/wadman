@@ -97,7 +97,8 @@ func LatestFile(details *AddonResponse, verbose bool) *AddonFile {
 	var bestFile *AddonFile
 	bestAge := math.MaxFloat64
 	bestValid := false
-	for _, f := range matches {
+	for i := range matches {
+		f := matches[i]
 		age := time.Now().Sub(f.Date).Seconds()
 		valid := validVersion(&f)
 		if (valid == bestValid && age < bestAge) || (!bestValid && valid) {
@@ -105,10 +106,10 @@ func LatestFile(details *AddonResponse, verbose bool) *AddonFile {
 			bestAge = age
 			bestValid = valid
 			if verbose {
-				fmt.Printf("\tTime: %s; Versions: %s << Best so far\n", f.Date, strings.Join(f.Versions, ","))
+				fmt.Printf("\t[%d] Time: %s; Versions: %s << Best so far\n", f.FileId, f.Date, strings.Join(f.Versions, ","))
 			}
 		} else if verbose {
-			fmt.Printf("\tTime: %s; Versions: %s << SKIPPED\n", f.Date, strings.Join(f.Versions, ","))
+			fmt.Printf("\t[%d] Time: %s; Versions: %s << SKIPPED\n", f.FileId, f.Date, strings.Join(f.Versions, ","))
 		}
 	}
 
