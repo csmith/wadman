@@ -124,7 +124,7 @@ func validVersion(file *AddonFile) bool {
 	var invalid = false
 	for _, v := range file.Versions {
 		// TODO: Make this configurable or dynamic based on the client version
-		if strings.HasPrefix(v, "8.") || strings.HasPrefix(v, "7.") {
+		if strings.HasPrefix(v, "9.") || strings.HasPrefix(v, "8.") || strings.HasPrefix(v, "7.") {
 			return true
 		} else {
 			invalid = true
