@@ -1,4 +1,4 @@
-package cmd
+package main
 
 import (
 	"fmt"
@@ -20,12 +20,6 @@ var (
 	config     *internal.Config
 	install    *internal.WowInstall
 )
-
-func Execute() {
-	if err := rootCommand.Execute(); err != nil {
-		bail("Error executing command: %v", err)
-	}
-}
 
 func init() {
 	cobra.OnInitialize(loadConfig, createInstall)

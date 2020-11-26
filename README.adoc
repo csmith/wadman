@@ -18,7 +18,6 @@ the config will look like this:
 ----
 {
   "install_path": "C:\\Program Files (x86)\\World of Warcraft\\_retail_",
-  // ...
 }
 ----
 
