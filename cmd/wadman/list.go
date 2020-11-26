@@ -24,20 +24,21 @@ var listCommand = &cobra.Command{
 		for i := range config.Addons {
 			addon := config.Addons[i]
 			count := 0
-			for d := range addon.Directories {
-				if disabled[addon.Directories[d]] {
+			dirs := addon.Dirs()
+			for d := range dirs {
+				if disabled[dirs[d]] {
 					count++
 				}
 			}
 
 			var status string
-			if count == len(addon.Directories) {
+			if count == len(dirs) {
 				status = " (DISABLED)"
 			} else if count > 0 {
 				status = " (PARTIALLY DISABLED)"
 			}
 
-			fmt.Printf("[%6d] %s%s\n", addon.Id, addon.Name, status)
+			fmt.Printf("%s%s\n", addon.DisplayName(), status)
 		}
 	},
 }

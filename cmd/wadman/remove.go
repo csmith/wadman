@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/csmith/wadman"
 	"github.com/spf13/cobra"
-	"strconv"
 )
 
 func init() {
@@ -14,28 +13,21 @@ func init() {
 var removeCommand = &cobra.Command{
 	Use:   "remove <id [id [id [...]]]>",
 	Short: "Remove previously installed addons",
-	Args:  requiredAddonIdArgs,
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		defer saveConfig()
 
-		var newAddons []*wadman.CurseForgeAddon
+		included := toIdMap(args)
+
+		var newAddons []wadman.Addon
 		for i := range config.Addons {
 			addon := config.Addons[i]
 
-			target := strconv.Itoa(addon.Id)
-			found := false
-			for n := range args {
-				if args[n] == target {
-					found = true
-					break
-				}
-			}
-
-			if found {
-				if err := install.RemoveAddons(addon.Directories); err != nil {
-					fmt.Printf("Failed to delete addon '%s': %v\n", addon.Name, err)
+			if included[addon.ShortName()] {
+				if err := install.RemoveAddons(addon.Dirs()); err != nil {
+					fmt.Printf("Failed to delete addon '%s': %v\n", addon.DisplayName(), err)
 				} else {
-					fmt.Printf("Removed addon '%s'\n", addon.Name)
+					fmt.Printf("Removed addon '%s'\n", addon.DisplayName())
 				}
 			} else {
 				newAddons = append(newAddons, addon)

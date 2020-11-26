@@ -1,9 +1,8 @@
-package internal
+package wadman
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/csmith/wadman"
 	"os"
 	"path/filepath"
 )
@@ -16,7 +15,7 @@ const configVersion = 3
 
 type Config struct {
 	InstallPath string
-	Addons      []*wadman.CurseForgeAddon
+	Addons      []Addon
 }
 
 func ConfigPath() (string, error) {
@@ -58,9 +57,9 @@ func LoadConfig(path string) (*Config, error) {
 		data.InstallPath = filepath.Dir(filepath.Dir(data.InstallPath))
 	}
 
-	var addons []*wadman.CurseForgeAddon
+	var addons []Addon
 	for i := range data.Addons {
-		base := wadman.BaseAddon{}
+		base := BaseAddon{}
 		if err := json.Unmarshal(data.Addons[i], &base); err != nil {
 			return nil, err
 		}
@@ -94,9 +93,9 @@ func SaveConfig(path string, config *Config) error {
 	}
 
 	data := &struct {
-		InstallPath string                    `json:"install_path"`
-		Version     int                       `json:"version"`
-		Addons      []*wadman.CurseForgeAddon `json:"addons"`
+		InstallPath string  `json:"install_path"`
+		Version     int     `json:"version"`
+		Addons      []Addon `json:"addons"`
 	}{
 		config.InstallPath,
 		configVersion,

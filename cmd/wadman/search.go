@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/csmith/wadman/internal"
+	"github.com/csmith/wadman/curse"
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +15,7 @@ var searchCommand = &cobra.Command{
 	Short: "Search for available addons",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		results, err := internal.SearchAddons(args[0])
+		results, err := curse.SearchAddons(args[0])
 		if err != nil {
 			bail("Unable to search addons: %v", err)
 		}

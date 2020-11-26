@@ -1,11 +1,9 @@
-package internal
+package wow
 
 import (
 	"archive/zip"
 	"bufio"
 	"bytes"
-	"fmt"
-	"github.com/csmith/wadman"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -14,7 +12,7 @@ import (
 	"strings"
 )
 
-func GuessWowPath() (string, bool) {
+func GuessPath() (string, bool) {
 	paths := []string{
 		"${PROGRAMW6432}\\World of Warcraft\\_retail_",
 		"${PROGRAMFILES(X86)}\\World of Warcraft\\_retail_",
@@ -31,20 +29,20 @@ func GuessWowPath() (string, bool) {
 	return "", false
 }
 
-type WowInstall struct {
+type Install struct {
 	path       string
 	addonsPath string
 }
 
-func NewWowInstall(path string) *WowInstall {
-	return &WowInstall{
+func NewWowInstall(path string) *Install {
+	return &Install{
 		path:       path,
 		addonsPath: filepath.Join(path, "Interface", "AddOns"),
 	}
 }
 
 // ListAddons returns a list of addons currently installed in the WoW addons directory.
-func (w *WowInstall) ListAddons() ([]string, error) {
+func (w *Install) ListAddons() ([]string, error) {
 	fs, err := ioutil.ReadDir(w.addonsPath)
 	if err != nil {
 		return nil, err
@@ -59,7 +57,7 @@ func (w *WowInstall) ListAddons() ([]string, error) {
 }
 
 // RemoveAddons removes the specified addons from the WoW directory addons directory.
-func (w *WowInstall) RemoveAddons(names []string) error {
+func (w *Install) RemoveAddons(names []string) error {
 	for i := range names {
 		if err := os.RemoveAll(filepath.Join(w.addonsPath, names[i])); err != nil {
 			return err
@@ -68,22 +66,27 @@ func (w *WowInstall) RemoveAddons(names []string) error {
 	return nil
 }
 
-// InstallAddon downloads a ZIP file from the given URL and deploys it to the WoW addons directory, returning a
+// InstallAddonFromUrl downloads a ZIP file from the given URL and deploys it to the WoW addons directory, returning a
 // slice of top-level folder names that were created.
-func (w *WowInstall) InstallAddon(url string) ([]string, error) {
+func (w *Install) InstallAddonFromUrl(url string) ([]string, error) {
 	res, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
 
 	defer res.Body.Close()
+	return w.InstallAddon(res.Body)
+}
 
-	b, err := ioutil.ReadAll(res.Body)
+// InstallAddon reads a ZIP file from the given reader and deploys it to the WoW addons directory, returning a
+// slice of top-level folder names that were created.
+func (w *Install) InstallAddon(r io.Reader) ([]string, error) {
+	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
 
-	reader, err := zip.NewReader(bytes.NewReader(b), res.ContentLength)
+	reader, err := zip.NewReader(bytes.NewReader(b), int64(len(b)))
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +135,7 @@ func (w *WowInstall) InstallAddon(url string) ([]string, error) {
 }
 
 // HasAddons returns true if all the given addons exist in the WoW addons directory.
-func (w *WowInstall) HasAddons(names []string) bool {
+func (w *Install) HasAddons(names []string) bool {
 	for i := range names {
 		target := filepath.Join(w.addonsPath, names[i])
 		info, err := os.Stat(target)
@@ -144,7 +147,7 @@ func (w *WowInstall) HasAddons(names []string) bool {
 }
 
 // DisabledAddons returns a map of addons that are disabled in the WoW client.
-func (w *WowInstall) DisabledAddons() (map[string]bool, error) {
+func (w *Install) DisabledAddons() (map[string]bool, error) {
 	matches, err := filepath.Glob(filepath.Join(w.path, "WTF", "Account", "*", "*", "*", "AddOns.txt"))
 	if err != nil {
 		return nil, err
@@ -178,64 +181,4 @@ func (w *WowInstall) DisabledAddons() (map[string]bool, error) {
 	}
 
 	return disabled, nil
-}
-
-// CheckUpdates checks for and applies updates for the given addon.
-// The addon name will be updated to match the server-side name.
-// If force is true, the addon will always be redeployed even if it appears to be up-to-date.
-func (w *WowInstall) CheckUpdates(addon *wadman.CurseForgeAddon, force, verbose bool) error {
-	if verbose {
-		fmt.Println()
-		fmt.Printf("================================================================================\n")
-		fmt.Printf("Checking for updates to addon %d (%s)\n\n", addon.Id, addon.Name)
-	}
-	details, err := GetAddon(addon.Id)
-	if err != nil {
-		return err
-	}
-
-	addon.Name = details.Name
-
-	latest := LatestFile(details, verbose)
-	if latest == nil {
-		return fmt.Errorf("no releases found for addon %d (%s)", addon.Id, addon.Name)
-	}
-
-	if force {
-		fmt.Printf("'%s': force updating to version %s\n", addon.Name, latest.DisplayName)
-	} else if addon.FileId == 0 {
-		fmt.Printf("'%s': installing version %s\n", addon.Name, latest.DisplayName)
-	} else if latest.FileId != addon.FileId {
-		fmt.Printf("'%s': updating to version %s\n", addon.Name, latest.DisplayName)
-	} else if !w.HasAddons(addon.Directories) {
-		fmt.Printf("'%s': missing directories, reinstalling version %s\n", addon.Name, latest.DisplayName)
-	} else {
-		if verbose {
-			fmt.Printf(
-				"No update found for '%s'. Installed file ID: %d, latest file ID: %d (version: %s)\n",
-				addon.Name,
-				addon.FileId,
-				latest.FileId,
-				latest.DisplayName,
-			)
-		}
-
-		return nil
-	}
-
-	// Remove all the existing directories associated with the addon
-	if err := w.RemoveAddons(addon.Directories); err != nil {
-		return err
-	}
-
-	// Deploy the new version
-	dirs, err := w.InstallAddon(latest.Url)
-	if err != nil {
-		return err
-	}
-
-	// Update our metadata
-	addon.FileId = latest.FileId
-	addon.Directories = dirs
-	return nil
 }

@@ -1,6 +1,9 @@
 package wadman
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/csmith/wadman/wow"
+)
 
 type AddonType string
 
@@ -9,19 +12,7 @@ const (
 	TypeCurseForge  AddonType = "curse"
 )
 
-type BaseAddon struct {
-	Type        AddonType `json:"type"`
-	Directories []string  `json:"directories"`
-}
-
-type CurseForgeAddon struct {
-	BaseAddon
-	Id     int    `json:"id"`
-	Name   string `json:"name"`
-	FileId int    `json:"file_id"`
-}
-
-func (t AddonType) NewInstance() (*CurseForgeAddon, error) {
+func (t AddonType) NewInstance() (Addon, error) {
 	switch t {
 	case TypeUnspecified:
 		// For compatibility with old configs, if the type field is missing default to curseforge
@@ -31,4 +22,20 @@ func (t AddonType) NewInstance() (*CurseForgeAddon, error) {
 	default:
 		return nil, fmt.Errorf("unknown addon type: %s", t)
 	}
+}
+
+type Addon interface {
+	ShortName() string
+	DisplayName() string
+	Dirs() []string
+	Update(w *wow.Install, force, verbose bool) error
+}
+
+type BaseAddon struct {
+	Type        AddonType `json:"type"`
+	Directories []string  `json:"directories"`
+}
+
+func (a *BaseAddon) Dirs() []string {
+	return a.Directories
 }

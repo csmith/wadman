@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"log"
 	"strconv"
+	"strings"
 )
 
 func init() {
@@ -19,7 +20,7 @@ var verbose bool
 var updateCommand = &cobra.Command{
 	Use:   "update [id [id ...]]",
 	Short: "Update installed addons",
-	Args:  optionalAddonIdArgs,
+	Args:  cobra.ArbitraryArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		defer saveConfig()
 
@@ -28,10 +29,10 @@ var updateCommand = &cobra.Command{
 		included := toIdMap(args)
 
 		for i := range config.Addons {
-			if !filtered || included[config.Addons[i].Id] {
+			if !filtered || included[config.Addons[i].ShortName()] {
 				matched++
-				if err := install.CheckUpdates(config.Addons[i], force, verbose); err != nil {
-					fmt.Printf("Unable to update addon '%s': %v\n", config.Addons[i].Name, err)
+				if err := config.Addons[i].Update(install, force, verbose); err != nil {
+					fmt.Printf("Unable to update addon '%s': %v\n", config.Addons[i].DisplayName(), err)
 				}
 			}
 		}
@@ -44,11 +45,13 @@ var updateCommand = &cobra.Command{
 	},
 }
 
-func toIdMap(args []string) map[int]bool {
-	res := make(map[int]bool)
+func toIdMap(args []string) map[string]bool {
+	res := make(map[string]bool)
 	for _, a := range args {
-		i, _ := strconv.Atoi(a)
-		res[i] = true
+		if i, err := strconv.Atoi(a); err == nil {
+			res[fmt.Sprintf("curse:%d", i)] = true
+		}
+		res[strings.ToLower(a)] = true
 	}
 	return res
 }

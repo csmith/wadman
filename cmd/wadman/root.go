@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/csmith/wadman/internal"
+	"github.com/csmith/wadman"
+	"github.com/csmith/wadman/wow"
 	"github.com/spf13/cobra"
 	"os"
 	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -17,8 +17,8 @@ var (
 	}
 
 	configPath string
-	config     *internal.Config
-	install    *internal.WowInstall
+	config     *wadman.Config
+	install    *wow.Install
 )
 
 func init() {
@@ -28,18 +28,18 @@ func init() {
 func loadConfig() {
 	var err error
 
-	configPath, err = internal.ConfigPath()
+	configPath, err = wadman.ConfigPath()
 	if err != nil {
 		bail("Unable to build config path: %v", err)
 	}
 
-	config, err = internal.LoadConfig(configPath)
+	config, err = wadman.LoadConfig(configPath)
 	if err != nil {
 		bail("Unable to load config from %s: %v", configPath, err)
 	}
 
 	if config.InstallPath == "" {
-		if path, ok := internal.GuessWowPath(); ok {
+		if path, ok := wow.GuessPath(); ok {
 			fmt.Printf("Detected WoW install at %s\n", path)
 			config.InstallPath = path
 		} else {
@@ -50,40 +50,16 @@ func loadConfig() {
 
 func saveConfig() {
 	sort.Slice(config.Addons, func(i, j int) bool {
-		return strings.Compare(config.Addons[i].Name, config.Addons[j].Name) < 0
+		return strings.Compare(config.Addons[i].DisplayName(), config.Addons[j].DisplayName()) < 0
 	})
 
-	if err := internal.SaveConfig(configPath, config); err != nil {
+	if err := wadman.SaveConfig(configPath, config); err != nil {
 		bail("Unable to save config file to %s: %v", configPath, err)
 	}
 }
 
 func createInstall() {
-	install = internal.NewWowInstall(config.InstallPath)
-}
-
-func requiredAddonIdArgs(_ *cobra.Command, args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("requires at least one ID")
-	}
-
-	for i := range args {
-		if _, err := strconv.Atoi(args[i]); err != nil {
-			return fmt.Errorf("invalid ID at argument %d: %v", i + 1, err)
-		}
-	}
-
-	return nil
-}
-
-func optionalAddonIdArgs(_ *cobra.Command, args []string) error {
-	for i := range args {
-		if _, err := strconv.Atoi(args[i]); err != nil {
-			return fmt.Errorf("invalid ID at argument %d: %v", i + 1, err)
-		}
-	}
-
-	return nil
+	install = wow.NewWowInstall(config.InstallPath)
 }
 
 func bail(format string, args ...interface{}) {
