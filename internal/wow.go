@@ -5,6 +5,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"github.com/csmith/wadman"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -182,7 +183,7 @@ func (w *WowInstall) DisabledAddons() (map[string]bool, error) {
 // CheckUpdates checks for and applies updates for the given addon.
 // The addon name will be updated to match the server-side name.
 // If force is true, the addon will always be redeployed even if it appears to be up-to-date.
-func (w *WowInstall) CheckUpdates(addon *Addon, force, verbose bool) error {
+func (w *WowInstall) CheckUpdates(addon *wadman.CurseForgeAddon, force, verbose bool) error {
 	if verbose {
 		fmt.Println()
 		fmt.Printf("================================================================================\n")

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/csmith/wadman/internal"
+	"github.com/csmith/wadman"
 	"github.com/spf13/cobra"
 	"strconv"
 )
@@ -18,7 +18,7 @@ var removeCommand = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		defer saveConfig()
 
-		var newAddons []*internal.Addon
+		var newAddons []*wadman.CurseForgeAddon
 		for i := range config.Addons {
 			addon := config.Addons[i]
 

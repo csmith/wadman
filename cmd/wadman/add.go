@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/csmith/wadman/internal"
+	"github.com/csmith/wadman"
 	"github.com/spf13/cobra"
 	"strconv"
 )
@@ -20,7 +20,7 @@ var addCommand = &cobra.Command{
 
 		for i := range args {
 			target, _ := strconv.Atoi(args[i])
-			addon := &internal.Addon{Id: target}
+			addon := &wadman.CurseForgeAddon{Id: target}
 			if err := install.CheckUpdates(addon, false, false); err != nil {
 				fmt.Printf("Unable to install addon #%d: %v\n", target, err)
 			}

@@ -2,21 +2,21 @@ package internal
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/csmith/wadman"
 	"os"
 	"path/filepath"
 )
 
-type Addon struct {
-	Id          int      `json:"id"`
-	Name        string   `json:"name"`
-	FileId      int      `json:"file_id"`
-	Directories []string `json:"directories"`
-}
+// configVersion specifies the maximum version of the config file this build of wadman supports
+// version 1 was the original config format
+// version 2 changed the install_path field to the base _retail_ directory instead of the addons directory
+// version 3 added a type field to addons
+const configVersion = 3
 
 type Config struct {
-	InstallPath string   `json:"install_path"`
-	Version     int      `json:"version"`
-	Addons      []*Addon `json:"addons"`
+	InstallPath string
+	Addons      []*wadman.CurseForgeAddon
 }
 
 func ConfigPath() (string, error) {
@@ -32,28 +32,55 @@ func LoadConfig(path string) (*Config, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return &Config{
-				Version: 2,
-			}, nil
+			return &Config{}, nil
 		}
 		return nil, err
 	}
 
 	defer f.Close()
 
-	config := &Config{}
-	err = json.NewDecoder(f).Decode(config)
+	data := &struct {
+		InstallPath string            `json:"install_path"`
+		Version     int               `json:"version"`
+		Addons      []json.RawMessage `json:"addons"`
+	}{}
+	err = json.NewDecoder(f).Decode(data)
 	if err != nil {
 		return nil, err
 	}
 
-	if config.Version < 2 {
-		// Config version 2 uses the base directory for the install path, instead of the addons directory
-		config.InstallPath = filepath.Dir(filepath.Dir(config.InstallPath))
-		config.Version = 2
+	if data.Version > configVersion {
+		return nil, fmt.Errorf("config file version %d requires a new version of wadman", data.Version)
 	}
 
-	return config, nil
+	if data.Version < 2 {
+		// Config version 2 uses the base directory for the install path, instead of the addons directory
+		data.InstallPath = filepath.Dir(filepath.Dir(data.InstallPath))
+	}
+
+	var addons []*wadman.CurseForgeAddon
+	for i := range data.Addons {
+		base := wadman.BaseAddon{}
+		if err := json.Unmarshal(data.Addons[i], &base); err != nil {
+			return nil, err
+		}
+
+		inst, err := base.Type.NewInstance()
+		if err != nil {
+			return nil, err
+		}
+
+		if err := json.Unmarshal(data.Addons[i], &inst); err != nil {
+			return nil, err
+		}
+
+		addons = append(addons, inst)
+	}
+
+	return &Config{
+		InstallPath: data.InstallPath,
+		Addons:      addons,
+	}, nil
 }
 
 func SaveConfig(path string, config *Config) error {
@@ -66,9 +93,19 @@ func SaveConfig(path string, config *Config) error {
 		return err
 	}
 
+	data := &struct {
+		InstallPath string                    `json:"install_path"`
+		Version     int                       `json:"version"`
+		Addons      []*wadman.CurseForgeAddon `json:"addons"`
+	}{
+		config.InstallPath,
+		configVersion,
+		config.Addons,
+	}
+
 	enc := json.NewEncoder(f)
 	enc.SetIndent("", "  ")
-	if err := enc.Encode(config); err != nil {
+	if err := enc.Encode(data); err != nil {
 		_ = f.Close()
 		return err
 	}
