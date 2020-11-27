@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/csmith/wadman"
 	"github.com/spf13/cobra"
+	"io/ioutil"
 	"strconv"
 	"strings"
 )
@@ -23,10 +24,13 @@ var addCommand = &cobra.Command{
 			// TODO: Support other addon types here
 			target, _ := strconv.Atoi(strings.TrimPrefix(args[i], "curse:"))
 			addon := &wadman.CurseForgeAddon{Id: target}
-			if err := addon.Update(install, false, false); err != nil {
+			_, version, err := addon.Update(install, ioutil.Discard, false)
+			if err != nil {
 				fmt.Printf("Unable to install addon #%d: %v\n", target, err)
+			} else {
+				fmt.Printf("Installed addon '%s' version %s\n", addon.DisplayName(), version)
+				config.Addons = append(config.Addons, addon)
 			}
-			config.Addons = append(config.Addons, addon)
 		}
 	},
 }

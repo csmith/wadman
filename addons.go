@@ -3,6 +3,7 @@ package wadman
 import (
 	"fmt"
 	"github.com/csmith/wadman/wow"
+	"io"
 )
 
 type AddonType string
@@ -28,7 +29,7 @@ type Addon interface {
 	ShortName() string
 	DisplayName() string
 	Dirs() []string
-	Update(w *wow.Install, force, verbose bool) error
+	Update(w *wow.Install, debug io.Writer, force bool) (updated bool, version string, err error)
 }
 
 type BaseAddon struct {

@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	"log"
+	"io"
+	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -28,19 +30,31 @@ var updateCommand = &cobra.Command{
 		filtered := len(args) > 0
 		included := toIdMap(args)
 
+		var debug io.Writer
+		if verbose {
+			debug = os.Stdout
+		} else {
+			debug = ioutil.Discard
+		}
+
 		for i := range config.Addons {
 			if !filtered || included[config.Addons[i].ShortName()] {
 				matched++
-				if err := config.Addons[i].Update(install, force, verbose); err != nil {
+				updated, version, err := config.Addons[i].Update(install, debug, force)
+				if err != nil {
 					fmt.Printf("Unable to update addon '%s': %v\n", config.Addons[i].DisplayName(), err)
+				} else if force {
+					fmt.Printf("Reinstalled addon '%s' at version %s\n", config.Addons[i].DisplayName(), version)
+				} else if updated {
+					fmt.Printf("Updated addon '%s' to version %s\n", config.Addons[i].DisplayName(), version)
 				}
 			}
 		}
 
 		if len(config.Addons) == 0 {
-			log.Printf("No addons configured. Add addons to the config file: %s", configPath)
+			fmt.Printf("No addons configured. Add addons to the config file: %s\n", configPath)
 		} else {
-			log.Printf("Finished checking %d addons", matched)
+			fmt.Printf("Finished checking %d addons\n", matched)
 		}
 	},
 }

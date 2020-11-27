@@ -3,6 +3,7 @@ package curse
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"net/http"
 	"net/url"
@@ -61,38 +62,34 @@ func SearchAddons(query string) ([]*AddonResponse, error) {
 	return addons, err
 }
 
-func LatestFile(details *AddonResponse, verbose bool) *AddonFile {
+func LatestFile(details *AddonResponse, debug io.Writer) *AddonFile {
 	var matches []AddonFile
 
 	for i := range details.Files {
 		f := details.Files[i]
 
-		if verbose {
-			fmt.Printf(
-				"Found file %d (%s)\n"+
-					"\tFlavour: %s (valid: %t)\n"+
-					"\tType: %d (valid: %t)\n"+
-					"\tAlternative: %t (valid: %t)\n"+
-					"\n",
-				f.FileId,
-				f.DisplayName,
-				f.Flavour,
-				f.Flavour == "wow_retail",
-				f.Type,
-				f.Type <= Beta,
-				f.Alternate,
-				!f.Alternate,
-			)
-		}
+		fmt.Fprintf(debug,
+			"Found file %d (%s)\n"+
+				"\tFlavour: %s (valid: %t)\n"+
+				"\tType: %d (valid: %t)\n"+
+				"\tAlternative: %t (valid: %t)\n"+
+				"\n",
+			f.FileId,
+			f.DisplayName,
+			f.Flavour,
+			f.Flavour == "wow_retail",
+			f.Type,
+			f.Type <= Beta,
+			f.Alternate,
+			!f.Alternate,
+		)
 
 		if f.Flavour == "wow_retail" && f.Type <= Beta && !f.Alternate {
 			matches = append(matches, f)
 		}
 	}
 
-	if verbose {
-		fmt.Printf("Found %d potential versions:\n", len(matches))
-	}
+	fmt.Fprintf(debug, "Found %d potential versions:\n", len(matches))
 
 	var bestFile *AddonFile
 	bestAge := math.MaxFloat64
@@ -105,17 +102,13 @@ func LatestFile(details *AddonResponse, verbose bool) *AddonFile {
 			bestFile = &f
 			bestAge = age
 			bestValid = valid
-			if verbose {
-				fmt.Printf("\t[%d] Time: %s; Versions: %s << Best so far\n", f.FileId, f.Date, strings.Join(f.Versions, ","))
-			}
-		} else if verbose {
-			fmt.Printf("\t[%d] Time: %s; Versions: %s << SKIPPED\n", f.FileId, f.Date, strings.Join(f.Versions, ","))
+			fmt.Fprintf(debug, "\t[%d] Time: %s; Versions: %s << Best so far\n", f.FileId, f.Date, strings.Join(f.Versions, ","))
+		} else {
+			fmt.Fprintf(debug, "\t[%d] Time: %s; Versions: %s << SKIPPED\n", f.FileId, f.Date, strings.Join(f.Versions, ","))
 		}
 	}
 
-	if verbose {
-		fmt.Println()
-	}
+	fmt.Fprintln(debug)
 
 	return bestFile
 }
