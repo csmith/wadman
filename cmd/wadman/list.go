@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
+	"os"
 )
 
 func init() {
@@ -21,6 +23,9 @@ var listCommand = &cobra.Command{
 		}
 
 		fmt.Printf("%d addons installed:\n\n", len(config.Addons))
+		table := tablewriter.NewWriter(os.Stdout)
+		table.SetHeader([]string{"Name", "ID", "Status"})
+		table.SetAutoWrapText(false)
 		for i := range config.Addons {
 			addon := config.Addons[i]
 			count := 0
@@ -33,12 +38,13 @@ var listCommand = &cobra.Command{
 
 			var status string
 			if count == len(dirs) {
-				status = " (DISABLED)"
+				status = "disabled"
 			} else if count > 0 {
-				status = " (PARTIALLY DISABLED)"
+				status = fmt.Sprintf("disabled (%d/%d)", count, len(dirs))
 			}
 
-			fmt.Printf("%s%s\n", addon.DisplayName(), status)
+			table.Append([]string{addon.DisplayName(), addon.ShortName(), status})
 		}
+		table.Render()
 	},
 }

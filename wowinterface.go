@@ -20,7 +20,7 @@ func NewWowInterfaceAddon(id int) Addon {
 }
 
 func (w *WowInterfaceAddon) DisplayName() string {
-	return fmt.Sprintf("[wowi:%d] %s", w.Id, w.Title)
+	return w.Title
 }
 
 func (w *WowInterfaceAddon) ShortName() string {

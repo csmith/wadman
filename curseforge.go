@@ -19,7 +19,7 @@ func NewCurseForgeAddon(id int) Addon {
 }
 
 func (c *CurseForgeAddon) DisplayName() string {
-	return fmt.Sprintf("[curse:%d] %s", c.Id, c.Name)
+	return c.Name
 }
 
 func (c *CurseForgeAddon) ShortName() string {
