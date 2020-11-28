@@ -31,11 +31,10 @@ var addCommand = &cobra.Command{
 				addon = wadman.NewCurseForgeAddon(target)
 			}
 
-			_, version, err := addon.Update(install, ioutil.Discard, false)
-			if err != nil {
+			if _, err := addon.Update(install, ioutil.Discard, false); err != nil {
 				fmt.Printf("Unable to install addon %s: %v\n", args[i], err)
 			} else {
-				fmt.Printf("Installed addon '%s' version %s\n", addon.DisplayName(), version)
+				fmt.Printf("Installed addon '%s' version %s\n", addon.DisplayName(), addon.CurrentVersion())
 				config.Addons = append(config.Addons, addon)
 			}
 		}

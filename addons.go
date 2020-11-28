@@ -32,14 +32,21 @@ type Addon interface {
 	ShortName() string
 	DisplayName() string
 	Dirs() []string
-	Update(w *wow.Install, debug io.Writer, force bool) (updated bool, version string, err error)
+	CurrentVersion() string
+
+	Update(w *wow.Install, debug io.Writer, force bool) (updated bool, err error)
 }
 
 type BaseAddon struct {
 	Type        AddonType `json:"type"`
 	Directories []string  `json:"directories"`
+	Version     string    `json:"version"`
 }
 
 func (a *BaseAddon) Dirs() []string {
 	return a.Directories
+}
+
+func (a *BaseAddon) CurrentVersion() string {
+	return a.Version
 }

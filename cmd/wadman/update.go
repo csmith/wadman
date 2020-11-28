@@ -38,21 +38,22 @@ var updateCommand = &cobra.Command{
 		}
 
 		for i := range config.Addons {
-			if !filtered || included[config.Addons[i].ShortName()] {
+			addon := config.Addons[i]
+			if !filtered || included[addon.ShortName()] {
 				matched++
-				updated, version, err := config.Addons[i].Update(install, debug, force)
+				updated, err := addon.Update(install, debug, force)
 				if err != nil {
-					fmt.Printf("Unable to update addon '%s': %v\n", config.Addons[i].DisplayName(), err)
+					fmt.Printf("Unable to update addon '%s': %v\n", addon.DisplayName(), err)
 				} else if force {
-					fmt.Printf("Reinstalled addon '%s' at version %s\n", config.Addons[i].DisplayName(), version)
+					fmt.Printf("Reinstalled addon '%s' at version %s\n", addon.DisplayName(), addon.CurrentVersion())
 				} else if updated {
-					fmt.Printf("Updated addon '%s' to version %s\n", config.Addons[i].DisplayName(), version)
+					fmt.Printf("Updated addon '%s' to version %s\n", addon.DisplayName(), addon.CurrentVersion())
 				}
 			}
 		}
 
 		if len(config.Addons) == 0 {
-			fmt.Printf("No addons configured. Add addons to the config file: %s\n", configPath)
+			fmt.Printf("No addons configured. Use the 'add' command to add new addons.\n")
 		} else {
 			fmt.Printf("Finished checking %d addons\n", matched)
 		}

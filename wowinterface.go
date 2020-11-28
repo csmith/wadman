@@ -27,7 +27,7 @@ func (w *WowInterfaceAddon) ShortName() string {
 	return fmt.Sprintf("wowi:%d", w.Id)
 }
 
-func (w *WowInterfaceAddon) Update(install *wow.Install, debug io.Writer, force bool) (updated bool, version string, err error) {
+func (w *WowInterfaceAddon) Update(install *wow.Install, _ io.Writer, force bool) (updated bool, err error) {
 	var response []struct {
 		Id       int    `json:"id"`
 		Version  string `json:"version"`
@@ -39,16 +39,16 @@ func (w *WowInterfaceAddon) Update(install *wow.Install, debug io.Writer, force 
 	url := fmt.Sprintf("https://api.mmoui.com/v4/game/WOW/filedetails/%d.json", w.Id)
 	res, err := http.Get(url)
 	if err != nil {
-		return false, "", err
+		return false, err
 	}
 
 	defer res.Body.Close()
 	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
-		return false, "", err
+		return false, err
 	}
 
 	if len(response) != 1 {
-		return false, "", fmt.Errorf("expected 1 result, got %d", len(response))
+		return false, fmt.Errorf("expected 1 result, got %d", len(response))
 	}
 
 	w.Title = response[0].Title
@@ -56,13 +56,14 @@ func (w *WowInterfaceAddon) Update(install *wow.Install, debug io.Writer, force 
 		// New version to install
 		dirs, err := install.InstallAddonFromUrl(response[0].Url)
 		if err != nil {
-			return false, "", err
+			return false, err
 		}
 
 		w.LastChecksum = response[0].Checksum
 		w.Directories = dirs
-		return true, response[0].Version, nil
+		w.Version = response[0].Version
+		return true, nil
 	} else {
-		return false, "", nil
+		return false, nil
 	}
 }
