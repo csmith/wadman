@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bufio"
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -50,10 +51,42 @@ func (w *Install) ListAddons() ([]string, error) {
 
 	var folders []string
 	for i := range fs {
-		folders = append(folders, fs[i].Name())
+		if fs[i].IsDir() {
+			folders = append(folders, fs[i].Name())
+		}
 	}
 
 	return folders, nil
+}
+
+// ReadToc reads the TOC file associated with the given addon and returns the meta-data and included files.
+// Meta-data keys will be lower-cased.
+func (w *Install) ReadToc(addon string) (metadata map[string]string, files []string, err error) {
+	p := filepath.Join(w.addonsPath, addon, fmt.Sprintf("%s.toc", addon))
+	b, err := ioutil.ReadFile(p)
+	if err != nil {
+		return
+	}
+
+	metadata = make(map[string]string)
+	lines := strings.Split(string(b), "\n")
+	for i := range lines {
+		line := lines[i]
+		if strings.HasPrefix(line, "##") {
+			// Meta-data line
+			parts := strings.SplitN(strings.TrimPrefix(line ,"##"), ":", 2)
+			if len(parts) == 2 {
+				metadata[strings.ToLower(strings.TrimSpace(parts[0]))] = strings.TrimSpace(parts[1])
+			}
+		} else if !strings.HasPrefix(line, "#") {
+			line = strings.TrimSpace(line)
+			if len(line) > 0 {
+				files = append(files, line)
+			}
+		}
+	}
+
+	return
 }
 
 // RemoveAddons removes the specified addons from the WoW directory addons directory.
