@@ -24,7 +24,7 @@ var listCommand = &cobra.Command{
 
 		fmt.Printf("%d addons installed:\n\n", len(config.Addons))
 		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Name", "ID", "Status"})
+		table.SetHeader([]string{"ID", "Name", "Version", "Last updated", "Status"})
 		table.SetAutoWrapText(false)
 		for i := range config.Addons {
 			addon := config.Addons[i]
@@ -43,7 +43,15 @@ var listCommand = &cobra.Command{
 				status = fmt.Sprintf("disabled (%d/%d)", count, len(dirs))
 			}
 
-			table.Append([]string{addon.DisplayName(), addon.ShortName(), status})
+			var lastUpdated string
+			if addon.LastUpdated().IsZero() {
+				lastUpdated = ""
+			} else {
+				lastUpdated = addon.LastUpdated().Format("2006-01-02 15:04")
+			}
+
+
+			table.Append([]string{addon.ShortName(), addon.DisplayName(), addon.CurrentVersion(), lastUpdated, status})
 		}
 		table.Render()
 	},
