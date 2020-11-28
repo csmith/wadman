@@ -21,12 +21,19 @@ var addCommand = &cobra.Command{
 		defer saveConfig()
 
 		for i := range args {
-			// TODO: Support other addon types here
-			target, _ := strconv.Atoi(strings.TrimPrefix(args[i], "curse:"))
-			addon := &wadman.CurseForgeAddon{Id: target}
+			var addon wadman.Addon
+			if strings.HasPrefix(args[i], "wowi:") {
+				target, _ := strconv.Atoi(strings.TrimPrefix(args[i], "wowi:"))
+				addon = wadman.NewWowInterfaceAddon(target)
+			} else {
+				// Assume it's CurseForge if it's unprefixed
+				target, _ := strconv.Atoi(strings.TrimPrefix(args[i], "curse:"))
+				addon = wadman.NewCurseForgeAddon(target)
+			}
+
 			_, version, err := addon.Update(install, ioutil.Discard, false)
 			if err != nil {
-				fmt.Printf("Unable to install addon #%d: %v\n", target, err)
+				fmt.Printf("Unable to install addon %s: %v\n", args[i], err)
 			} else {
 				fmt.Printf("Installed addon '%s' version %s\n", addon.DisplayName(), version)
 				config.Addons = append(config.Addons, addon)

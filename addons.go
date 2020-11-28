@@ -9,17 +9,20 @@ import (
 type AddonType string
 
 const (
-	TypeUnspecified AddonType = ""
-	TypeCurseForge  AddonType = "curse"
+	TypeUnspecified  AddonType = ""
+	TypeCurseForge   AddonType = "curse"
+	TypeWowInterface AddonType = "wowi"
 )
 
 func (t AddonType) NewInstance() (Addon, error) {
 	switch t {
 	case TypeUnspecified:
 		// For compatibility with old configs, if the type field is missing default to curseforge
-		return &CurseForgeAddon{BaseAddon: BaseAddon{Type: TypeCurseForge}}, nil
+		return NewCurseForgeAddon(0), nil
 	case TypeCurseForge:
-		return &CurseForgeAddon{BaseAddon: BaseAddon{Type: TypeCurseForge}}, nil
+		return NewCurseForgeAddon(0), nil
+	case TypeWowInterface:
+		return NewWowInterfaceAddon(0), nil
 	default:
 		return nil, fmt.Errorf("unknown addon type: %s", t)
 	}

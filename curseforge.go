@@ -14,6 +14,10 @@ type CurseForgeAddon struct {
 	FileId int    `json:"file_id"`
 }
 
+func NewCurseForgeAddon(id int) Addon {
+	return &CurseForgeAddon{BaseAddon: BaseAddon{Type: TypeCurseForge}, Id: id}
+}
+
 func (c *CurseForgeAddon) DisplayName() string {
 	return fmt.Sprintf("[curse:%d] %s", c.Id, c.Name)
 }

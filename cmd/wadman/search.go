@@ -12,7 +12,7 @@ func init() {
 
 var searchCommand = &cobra.Command{
 	Use:   "search <query>",
-	Short: "Search for available addons",
+	Short: "Search for available addons on CurseForge",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		results, err := curse.SearchAddons(args[0])
