@@ -6,6 +6,7 @@ import (
 	"github.com/csmith/wadman/wow"
 	"io"
 	"net/http"
+	"time"
 )
 
 type WowInterfaceAddon struct {
@@ -60,6 +61,7 @@ func (w *WowInterfaceAddon) Update(install *wow.Install, _ io.Writer, force bool
 		}
 
 		w.LastChecksum = response[0].Checksum
+		w.LastUpdate = time.Now()
 		w.Directories = dirs
 		w.Version = response[0].Version
 		return true, nil

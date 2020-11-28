@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/csmith/wadman/wow"
 	"io"
+	"time"
 )
 
 type AddonType string
@@ -33,6 +34,7 @@ type Addon interface {
 	DisplayName() string
 	Dirs() []string
 	CurrentVersion() string
+	LastUpdated() time.Time
 
 	Update(w *wow.Install, debug io.Writer, force bool) (updated bool, err error)
 }
@@ -41,6 +43,7 @@ type BaseAddon struct {
 	Type        AddonType `json:"type"`
 	Directories []string  `json:"directories"`
 	Version     string    `json:"version"`
+	LastUpdate  time.Time `json:"last_update"`
 }
 
 func (a *BaseAddon) Dirs() []string {
@@ -49,4 +52,8 @@ func (a *BaseAddon) Dirs() []string {
 
 func (a *BaseAddon) CurrentVersion() string {
 	return a.Version
+}
+
+func (a *BaseAddon) LastUpdated() time.Time {
+	return a.LastUpdate
 }

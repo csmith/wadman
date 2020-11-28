@@ -5,6 +5,7 @@ import (
 	"github.com/csmith/wadman/curse"
 	"github.com/csmith/wadman/wow"
 	"io"
+	"time"
 )
 
 type CurseForgeAddon struct {
@@ -68,6 +69,7 @@ func (c *CurseForgeAddon) Update(w *wow.Install, debug io.Writer, force bool) (u
 	// Update our metadata
 	c.FileId = latest.FileId
 	c.Version = latest.DisplayName
+	c.LastUpdate = time.Now()
 	c.Directories = dirs
 	return true, nil
 }
