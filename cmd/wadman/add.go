@@ -25,10 +25,17 @@ var addCommand = &cobra.Command{
 			if strings.HasPrefix(args[i], "wowi:") {
 				target, _ := strconv.Atoi(strings.TrimPrefix(args[i], "wowi:"))
 				addon = wadman.NewWowInterfaceAddon(target)
-			} else {
-				// Assume it's CurseForge if it's unprefixed
+			} else if strings.HasPrefix(args[i], "curse:") {
 				target, _ := strconv.Atoi(strings.TrimPrefix(args[i], "curse:"))
 				addon = wadman.NewCurseForgeAddon(target)
+			} else {
+				fmt.Printf("%s: Unrecognised addon type. Did you mean curse:%[1]s or wowi:%[1]s?\n", args[i])
+				continue
+			}
+
+			if addonExists(addon.ShortName()) {
+				fmt.Printf("%s: Addon is already installed.\n", args[i])
+				continue
 			}
 
 			if _, err := addon.Update(install, ioutil.Discard, false); err != nil {
@@ -39,4 +46,13 @@ var addCommand = &cobra.Command{
 			}
 		}
 	},
+}
+
+func addonExists(shortName string) bool {
+	for i := range config.Addons {
+		if config.Addons[i].ShortName() == shortName {
+			return true
+		}
+	}
+	return false
 }
